@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEF Springs Pro | ESPOCH - Facultad de Mecánica</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        canvas { border: 1px solid #d1d5db; border-radius: 12px; background: #ffffff; cursor: crosshair; transition: all 0.3s; }
+        canvas:hover { border-color: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1); }
+        .matrix-box { font-family: 'Courier New', monospace; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 8px 0; font-size: 0.85rem; color: #000000; line-height: 1.4; overflow-x: auto; }
+        html { scroll-behavior: smooth; }
+        .step-card { border-left: 4px solid #ef4444; padding-left: 1rem; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body class="bg-white text-slate-900 font-sans">
+
+    <!-- 1. ENCABEZADO (MANTENIDO) -->
+    <header class="bg-white border-b-4 border-red-600 py-10 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="w-32 h-32 flex items-center justify-center">
+                <img src="D:\Alex\Asignaturas\Materias Septimo\Mef2\Examen_MEF\ESPOCH.png" alt="Logo ESPOCH" class="max-w-full max-h-full object-contain">
+            </div>
+            <div class="flex-1 text-center">
+                <span class="bg-black text-white text-xs font-black px-4 py-1 rounded-full uppercase tracking-widest">Facultad de Mecánica</span>
+                <h1 class="text-4xl md:text-5xl font-black text-black mt-4 mb-4">Simulador MEF: Análisis de Resortes</h1>
+                <p class="text-base text-slate-600 leading-relaxed max-w-2xl mx-auto mb-8">
+                    Análisis de sistemas estructurales mediante el *Método de Rigidez Directa*. Herramienta técnica para el cálculo de matrices, desplazamientos y reacciones.
+                </p>
+                <div class="flex flex-wrap justify-center gap-4">
+                    <a href="#tutorial" class="bg-black text-white px-8 py-3 rounded-lg font-bold hover:bg-slate-800 transition shadow-lg">Ver Tutorial</a>
+                    <a href="#app" class="bg-red-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-red-700 transition shadow-lg shadow-red-100">Empezar Ejercicio</a>
+                </div>
+            </div>
+            <div class="w-32 h-32 flex items-center justify-center">
+                <img src="D:\Alex\Asignaturas\Materias Septimo\Mef2\Examen_MEF\CARRERA.png" alt="Logo Facultad de Mecánica" class="max-w-full max-h-full object-contain">
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. GUÍA DE USO Y VIDEO (MANTENIDO) -->
+    <section id="tutorial" class="py-16 bg-slate-50 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div class="space-y-6">
+                    <h2 class="text-3xl font-black text-black border-l-8 border-red-600 pl-4">Guía de Uso</h2>
+                    <div class="space-y-4">
+                        <div class="flex gap-4">
+                            <div class="bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm">1</div>
+                            <p class="text-slate-700"><strong>Define los Nodos:</strong> Haz clic en el lienzo para posicionar los nodos.</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm">2</div>
+                            <p class="text-slate-700"><strong>Conecta Elementos:</strong> Ingresa IDs y rigidez (k) para crear resortes.</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm">3</div>
+                            <p class="text-slate-700"><strong>Condiciones:</strong> Define apoyos fijos y fuerzas aplicadas.</p>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm">4</div>
+                            <p class="text-slate-700"><strong>Resultados:</strong> Genera la memoria de cálculo automática.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="aspect-video bg-black rounded-2xl shadow-2xl overflow-hidden border-4 border-black">
+                    <iframe class="w-full h-full" src="https://youtu.be/BIZIZcOiOSQ" title="Tutorial MEF" frameborder="0" allowfullscreen></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. SIMULADOR INTERACTIVO (ACTUALIZADO CON UNIDADES Y DESARROLLO) -->
+    <main id="app" class="py-16 px-4">
+        <div class="max-w-7xl mx-auto bg-white p-8 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.1)] border border-slate-100">
+            <div class="flex justify-between items-center mb-10 border-b pb-6">
+                <div>
+                    <h2 class="text-3xl font-black text-black tracking-tight">Área de Cálculo Técnico</h2>
+                    <div class="mt-2">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase mr-2">Sistema de Unidades:</label>
+                        <select id="unitSel" class="text-xs font-bold border-none bg-slate-100 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-red-600">
+                            <option value="N/mm">SI (N, mm)</option>
+                            <option value="kN/m">SI (kN, m)</option>
+                            <option value="lb/in">Inglés (lb, in)</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="resetSimulation()" class="bg-slate-100 text-slate-600 px-4 py-2 rounded-lg font-bold text-xs hover:bg-red-50 hover:text-red-600 transition">Reiniciar Espacio</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div class="lg:col-span-8 space-y-6">
+                    <canvas id="mefCanvas" width="800" height="400" class="w-full shadow-inner"></canvas>
+                    
+                    <div class="bg-slate-50 p-8 rounded-2xl border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-black text-slate-500 uppercase">Nodo Origen</label>
+                            <input type="number" id="n1_in" class="w-full p-3 rounded-lg border-2 border-slate-200 focus:border-red-600 outline-none transition" placeholder="ID">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-black text-slate-500 uppercase">Nodo Destino</label>
+                            <input type="number" id="n2_in" class="w-full p-3 rounded-lg border-2 border-slate-200 focus:border-red-600 outline-none transition" placeholder="ID">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-black text-slate-500 uppercase">Rigidez (k)</label>
+                            <input type="number" id="k_in" class="w-full p-3 rounded-lg border-2 border-slate-200 focus:border-red-600 outline-none transition" placeholder="Valor">
+                        </div>
+                        <button onclick="addSpring()" class="bg-black text-white h-[52px] rounded-lg font-bold hover:bg-slate-800 transition">Unir Nodos</button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-4 flex flex-col gap-6">
+                    <button onclick="solveMEF()" class="w-full bg-red-600 hover:bg-red-700 text-white py-5 rounded-xl shadow-lg font-black text-xl transition">
+                        CALCULAR EJERCICIO
+                    </button>
+
+                    <div class="bg-white border-2 border-slate-100 rounded-xl overflow-hidden h-[200px] overflow-y-auto shadow-sm">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-black text-white uppercase font-bold">
+                                <tr><th class="p-4">ID</th><th class="p-4 text-center">Fijo</th><th class="p-4">Carga</th><th class="p-4">δ</th></tr>
+                            </thead>
+                            <tbody id="nodeTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="stepArea" class="hidden bg-black text-slate-300 p-6 rounded-2xl h-[450px] overflow-y-auto shadow-2xl border-t-4 border-red-600">
+                        <h3 class="text-red-500 font-bold mb-6 text-xs tracking-widest uppercase border-b border-slate-800 pb-3 italic">Desarrollo del Ejercicio</h3>
+                        <div id="stepContent" class="space-y-8"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER (MANTENIDO) -->
+    <footer class="bg-black text-white pt-16 pb-8 px-6 mt-20">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 border-b border-slate-800 pb-12">
+            <div>
+                <h4 class="font-bold uppercase text-red-500 text-xs mb-4 tracking-widest">ESPOCH</h4>
+                <p class="text-sm text-slate-400 leading-relaxed">Escuela Superior Politécnica de Chimborazo<br>Facultad de Mecánica</p>
+                <p class="text-white font-bold text-xs mt-4">RIOBAMBA - ECUADOR</p>
+            </div>
+            <div>
+                <h4 class="font-bold uppercase text-red-500 text-xs mb-4 tracking-widest">Área Técnica</h4>
+                <p class="text-sm text-slate-400 leading-relaxed italic">Software de apoyo didáctico para la cátedra de Elementos Finitos.</p>
+            </div>
+            <div class="md:text-right">
+                <h4 class="font-bold uppercase text-red-500 text-xs mb-4 tracking-widest">Información</h4>
+                <p class="text-sm text-slate-400">Ingeniería Mecánica / Mecánica</p>
+                <p class="text-sm text-slate-400">Automatización de Procesos</p>
+                <p class="text-sm text-slate-400">dayana.guaman@espoch.edu.ec</p>
+                <p class="text-sm text-slate-400">nohely.ruiz@espoch.edu.ec</p>
+                <p class="text-sm text-slate-400">patricio.usca@espoch.edu.ec</p>
+            </div>
+        </div>
+        <div class="text-center mt-10 text-[10px] text-slate-600 uppercase tracking-widest">
+            Diseñado para fines educativos © 2026
+        </div>
+    </footer>
+
+    <script>
+        let nodes = [];
+        let elements = [];
+        let reactionsGlobal = [];
+        const canvas = document.getElementById('mefCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            nodes.push({ id: nodes.length, x: e.clientX - rect.left, y: e.clientY - rect.top, fixed: false, f: 0, delta: 0, u: 0 });
+            updateUI();
+        });
+
+        function addSpring() {
+            const n1 = parseInt(document.getElementById('n1_in').value);
+            const n2 = parseInt(document.getElementById('n2_in').value);
+            const k = parseFloat(document.getElementById('k_in').value);
+            if (nodes[n1] !== undefined && nodes[n2] !== undefined && !isNaN(k)) {
+                elements.push({ n1, n2, k });
+                updateUI();
+            }
+        }
+
+        function resetSimulation() {
+            nodes = []; elements = []; reactionsGlobal = [];
+            document.getElementById('stepArea').classList.add('hidden');
+            updateUI();
+        }
+
+        function updateUI() {
+            draw();
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('nodeTableBody');
+            tbody.innerHTML = nodes.map(n => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-4 font-bold text-black">${n.id}</td>
+                    <td class="p-4 text-center"><input type="checkbox" ${n.fixed ? 'checked' : ''} onchange="nodes[${n.id}].fixed = !nodes[${n.id}].fixed; updateUI();" class="accent-red-600"></td>
+                    <td class="p-4"><input type="number" value="${n.f}" onchange="nodes[${n.id}].f = parseFloat(this.value)" class="w-16 border rounded p-1 text-[10px]"></td>
+                    <td class="p-4"><input type="number" value="${n.delta}" onchange="nodes[${n.id}].delta = parseFloat(this.value)" class="w-16 border rounded p-1 text-[10px] ${n.fixed ? 'bg-red-50' : 'bg-slate-100'}" ${n.fixed ? '' : 'disabled'}></td>
+                </tr>
+            `).join('');
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            elements.forEach(el => {
+                ctx.beginPath(); ctx.moveTo(nodes[el.n1].x, nodes[el.n1].y); ctx.lineTo(nodes[el.n2].x, nodes[el.n2].y);
+                ctx.strokeStyle = '#000000'; ctx.setLineDash([10, 5]); ctx.lineWidth = 1.5; ctx.stroke(); ctx.setLineDash([]);
+                ctx.fillStyle = '#ef4444'; ctx.font = "bold 10px Arial";
+                ctx.fillText(`k=${el.k}`, (nodes[el.n1].x + nodes[el.n2].x)/2, (nodes[el.n1].y + nodes[el.n2].y)/2 - 10);
+            });
+            nodes.forEach(n => {
+                ctx.beginPath(); ctx.arc(n.x, n.y, 14, 0, 7);
+                ctx.fillStyle = n.fixed ? '#ef4444' : '#000000'; ctx.fill();
+                ctx.fillStyle = 'white'; ctx.font = "bold 10px Arial"; ctx.fillText(n.id, n.x - 4, n.y + 4);
+                if(reactionsGlobal[n.id] && Math.abs(reactionsGlobal[n.id]) > 0.01) {
+                    ctx.fillStyle = '#ef4444'; ctx.font = "bold 11px Arial";
+                    ctx.fillText(`R=${reactionsGlobal[n.id].toFixed(1)}`, n.x - 20, n.y + 35);
+                }
+            });
+        }
+
+        function renderMatrix(matrix, label) {
+            let html = `<div class='matrix-box'><span class='text-red-500 font-bold'>${label}</span> = <br>[<br>`;
+            const size = matrix.size();
+            for(let i=0; i<size[0]; i++){
+                html += "&nbsp;&nbsp;";
+                for(let j=0; j<size[1]; j++){
+                    let val = matrix.get([i,j]);
+                    html += (val % 1 === 0 ? val : val.toFixed(2)).toString().padStart(8) + " ";
+                }
+                html += "<br>";
+            }
+            return html + "]</div>";
+        }
+
+        function solveMEF() {
+            const N = nodes.length; if (N < 2) return;
+            const unit = document.getElementById('unitSel').value;
+            const step = document.getElementById('stepContent');
+            document.getElementById('stepArea').classList.remove('hidden');
+            step.innerHTML = "";
+
+            // 1. MATRICES ELEMENTALES[cite: 1]
+            step.innerHTML += `<div class='step-card'><h4 class='text-red-500 font-bold text-sm uppercase'>1. Matrices de Rigidez de Elementos [k_e]</h4></div>`;
+            elements.forEach((el, idx) => {
+                let ke = math.matrix([[el.k, -el.k], [-el.k, el.k]]);
+                step.innerHTML += renderMatrix(ke, `Elemento ${idx} (Nodos ${el.n1}-${el.n2})`);
+            });
+
+            // 2. MATRIZ ENSAMBLADA O GLOBAL[cite: 1]
+            let K_global = math.zeros(N, N);
+            elements.forEach(el => {
+                K_global.set([el.n1, el.n1], K_global.get([el.n1, el.n1]) + el.k);
+                K_global.set([el.n1, el.n2], K_global.get([el.n1, el.n2]) - el.k);
+                K_global.set([el.n2, el.n1], K_global.get([el.n2, el.n1]) - el.k);
+                K_global.set([el.n2, el.n2], K_global.get([el.n2, el.n2]) + el.k);
+            });
+            step.innerHTML += `<div class='step-card'><h4 class='text-red-500 font-bold text-sm uppercase'>2. Matriz de Rigidez Global [K_G]</h4></div>`;
+            step.innerHTML += renderMatrix(K_global, "Matriz Ensamblada");
+
+            // 3. ELIMINACIÓN DE APOYOS Y CÁLCULO DE DEFORMACIONES[cite: 1]
+            const libres = nodes.filter(n => !n.fixed).map(n => n.id);
+            const fijos = nodes.filter(n => n.fixed).map(n => n.id);
+            
+            step.innerHTML += `<div class='step-card'><h4 class='text-red-500 font-bold text-sm uppercase'>3. Sistema Reducido y Deformaciones</h4><p class='text-[10px]'>Se eliminan filas/columnas de nodos fijos (${fijos.join(",")})[cite: 1].</p></div>`;
+
+            let K_red = libres.map(i => libres.map(j => K_global.get([i, j])));
+            let F_eff = libres.map(i => nodes[i].f);
+            
+            // Ajuste por delta prescrito en fijos
+            fijos.forEach(f_id => {
+                if (nodes[f_id].delta !== 0) {
+                    libres.forEach((l_id, idx) => F_eff[idx] -= K_global.get([l_id, f_id]) * nodes[f_id].delta);
+                }
+            });
+
+            step.innerHTML += renderMatrix(math.matrix(K_red), "Matriz Reducida [K_11]");
+
+            try {
+                const u_sol = math.lusolve(K_red, F_eff).flat();
+                nodes.forEach(n => n.u = n.fixed ? n.delta : 0);
+                libres.forEach((id, idx) => nodes[id].u = u_sol[idx]);
+
+                let defHtml = "<div class='text-xs space-y-1 mb-4 text-white'>";
+                libres.forEach((id, idx) => {
+                    defHtml += `<div>u<sub>${id}</sub> = <b>${u_sol[idx].toFixed(6)}</b> mm</div>`;
+                });
+                step.innerHTML += defHtml + "</div>";
+
+                // 4. CÁLCULO DE REACCIONES[cite: 1]
+                step.innerHTML += `<div class='step-card'><h4 class='text-red-500 font-bold text-sm uppercase'>4. Cálculo de Reacciones {R}</h4><p class='text-[10px]'>Multiplicación de la matriz eliminada por los desplazamientos[cite: 1].</p></div>`;
+                
+                const u_vector = nodes.map(n => n.u);
+                const f_vector = nodes.map(n => n.f);
+                const R_vector = math.subtract(math.multiply(K_global, u_vector), f_vector);
+                reactionsGlobal = R_vector.toArray();
+
+                let reacHtml = "<div class='text-xs space-y-1 text-white'>";
+                fijos.forEach(id => {
+                    reacHtml += `<div>R<sub>${id}</sub> = <span class='text-red-500'>${reactionsGlobal[id].toFixed(2)}</span> ${unit.split('/')[0]}</div>`;
+                });
+                step.innerHTML += reacHtml + "</div>";
+
+                updateUI();
+            } catch (err) {
+                step.innerHTML += `<p class='text-red-500 text-xs font-bold'>Error: Sistema inestable. Verifique apoyos[cite: 1].</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
